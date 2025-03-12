@@ -39,22 +39,22 @@ trap 'exec 2>&4 1>&3' 0 1 2 3
 exec 1>"${logpath}/$(date "+%Y-%m-%d").log" 2>&1
 
 # Initial config checks
-if [[ -n "$ldir" ]]; then
-    echo "Datastore $1 does not exist. Check datastore name and try again. Exiting..."
+if [[ -z "$ldir" ]]; then
+    echo "Datastore $datastore does not exist. Check datastore name and try again. Exiting..."
     exit 1
 fi
 
 # Wait for running tasks to complete before starting
 runningtasks=$(proxmox-backup-manager task list)
-while [ -n "$runningtasks" ]; do
+while [ -z "$runningtasks" ]; do
     echo "$(date "+%H:%M:%S"): Other tasks are running. Waiting..."
     sleep 5m
     runningtasks=$(proxmox-backup-manager task list)
 done
 
 # Make datastore read-only to prevent changes during sync
-echo "$(date "+%H:%M:%S"): Putting datastore $1 in maintenance mode."
-if ! proxmox-backup-manager datastore update "$1" --maintenance-mode read-only; then
+echo "$(date "+%H:%M:%S"): Putting datastore $datastore in maintenance mode."
+if ! proxmox-backup-manager datastore update "$datastore" --maintenance-mode read-only; then
     echo "$(date "+%H:%M:%S"): Failed to put datastore in maintenance mode. Backup cannot continue. Aborting..."
     exit 1
 fi
@@ -62,13 +62,13 @@ fi
 # Start sync process
 ecode=0
 echo "$(date "+%H:%M:%S"): Starting rsync to remote server..."
-if ! /usr/bin/rsync -av --progress -H --delete -e ssh "${ruser}"@"${rhost}":"${ldir}" "${rdir}"; then
+if ! /usr/bin/rsync -av --progress -H --delete -e ssh "${ldir}" "${ruser}"@"${rhost}":"${rdir}"; then
     echo "$(date "+%H:%M:%S"): There were errors syncing files. Please review logs."
     ecode=2
 fi
 
-echo "$(date "+%H:%M:%S"): Turning off maintenance mode on datastore $1"
-if ! proxmox-backup-manager datastore update "$1" --delete maintenance-mode; then
+echo "$(date "+%H:%M:%S"): Turning off maintenance mode on datastore $datastore"
+if ! proxmox-backup-manager datastore update "$datastore" --delete maintenance-mode; then
     echo "$(date "+%H:%M:%S"): Could not turn off maintenance mode on datastore. Check PBS UI for more information."
     ecode=3
 fi

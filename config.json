@@ -1,7 +1,7 @@
 {
     "remotehost": "hostname",
     "remoteuser": "username",
-    "remotepath": "/path/to/backup/directory",
+    "remotepath": "path/to/backup/directory",
     "logpath": "/path/to/logs/for/this/script",
     "datastore": "LocalDatastore"
 }
