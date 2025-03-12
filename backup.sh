@@ -1,45 +1,46 @@
 #!/bin/bash
 
-/*
- * Copyright (c) 2025 jefoh
- *
- * This software is licensed under the terms of the MIT license.
- * See the LICENSE file for more details.
- * 
- *
- * 
- * This is a short simple script made with the intention of 
- * syncing a local Proxmox Backup Server datastore to a 
- * remote repository. 
- *
- * The instance running Proxmox Backup Server must have the following packages:
- * - proxmox-backup-manager
- * - rsync
- * - openssh-client
- * 
- * The remote repository location must have the following packages:
- * - rsync
- * - openssh-server
- */
+#
+# Copyright (c) 2025 jefoh
+#
+# This software is licensed under the terms of the MIT license.
+# See the LICENSE file for more details.
+# 
+#
+# 
+# This is a short simple script made with the intention of 
+# syncing a local Proxmox Backup Server datastore to a 
+# remote repository. 
+#
+# The local instance running Proxmox Backup Server must have the following packages installed:
+# - proxmox-backup-manager
+# - rsync
+# - openssh-client
+# - jq
+# 
+# The remote repository location must have the following packages installed:
+# - rsync
+# - openssh-server
+#
+config="config.json"
 
-timestamp=$(date "+%Y-%m-%d")
-rhost=""
-ruser=""
-rdir=""
-ldir=$(proxmox-backup-manager datastore list | grep "$1" | awk '{print $4}')
-logpath=""
+rhost=$(jq -r .remotehost "$config")
+ruser=$(jq -r .remoteuser "$config")
+rdir=$(jq -r .remotepath "$config")
+logpath=$(jq -r .logpath "$config")
+datastore=$(jq -r .datastore "$config")
+
+# Get datastore filesystem path
+ldir=$(proxmox-backup-manager datastore list | grep "$datastore" | awk '{print $4}')
 
 # Set up logging
 exec 3>&1 4>&2
 trap 'exec 2>&4 1>&3' 0 1 2 3
-exec 1>"${timestamp}.log" 2>&1
+exec 1>"${logpath}/$(date "+%Y-%m-%d").log" 2>&1
 
-# Initial parameter checks
-if [[ "$#" -ne 1 ]]; then
-    echo "Usage: $0 <datastore>" >&3
-    exit 1
-elif [[ -n "$ldir" ]]; then
-    echo "Datastore $1 does not exist. Check datastore name and try again." >&3
+# Initial config checks
+if [[ -n "$ldir" ]]; then
+    echo "Datastore $1 does not exist. Check datastore name and try again. Exiting..."
     exit 1
 fi
 
@@ -79,5 +80,5 @@ if ! find "$logpath" -type f -mtime +14 -exec rm -f {} \;; then
     ecode=4
 fi
 
-echo "$(date "+%H:%M:%S"): Rsync finished with an exit code of $ecode"
+echo "$(date "+%H:%M:%S"): $0 finished with an exit code of $ecode"
 exit $ecode
