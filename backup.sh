@@ -46,7 +46,7 @@ fi
 
 # Wait for running tasks to complete before starting
 runningtasks=$(proxmox-backup-manager task list)
-while [ -z "$runningtasks" ]; do
+while [ -n "$runningtasks" ]; do
     echo "$(date "+%H:%M:%S"): Other tasks are running. Waiting..."
     sleep 5m
     runningtasks=$(proxmox-backup-manager task list)
