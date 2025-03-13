@@ -22,25 +22,44 @@
 # - rsync
 # - openssh-server
 #
-config="config.json"
+
+# Set up logging
+logfile="${logpath}/$(date "+%Y-%m-%d").log"
+exec 3>&1 4>&2
+trap 'exec 2>&4 1>&3' 0 1 2 3
+exec 1>"$logfile" 2>&1
+
+# Read config file values
+config="$1"
+if [[ ! -f "$config" ]]; then
+    echo "Configuration file: $config does not exist. Please check spelling and location of specified file." >&3
+    exit 1
+fi
 
 rhost=$(jq -r .remotehost "$config")
 ruser=$(jq -r .remoteuser "$config")
-rdir=$(jq -r .remotepath "$config")
+rpath=$(jq -r .remotepath "$config")
 logpath=$(jq -r .logpath "$config")
 datastore=$(jq -r .datastore "$config")
+erecipient=$(jq -r .emailrecipient "$config")
+
+#Creates log entry
+log(){
+	echo -e "$(date "+%m%d%Y_%H%M%S"): $1"	
+}
+
+#Sends an email alert
+email(){
+	tail -n 5 "$logfile" | mail -s "$1" "$erecipient"
+}
 
 # Get datastore filesystem path
 ldir=$(proxmox-backup-manager datastore list | grep "$datastore" | awk '{print $4}')
 
-# Set up logging
-exec 3>&1 4>&2
-trap 'exec 2>&4 1>&3' 0 1 2 3
-exec 1>"${logpath}/$(date "+%Y-%m-%d").log" 2>&1
-
 # Initial config checks
 if [[ -z "$ldir" ]]; then
     echo "Datastore $datastore does not exist. Check datastore name and try again. Exiting..."
+    email "PBS to Rsync Failed on host $(hostname)"
     exit 1
 fi
 
@@ -53,32 +72,38 @@ while [ -n "$runningtasks" ]; do
 done
 
 # Make datastore read-only to prevent changes during sync
-echo "$(date "+%H:%M:%S"): Putting datastore $datastore in maintenance mode."
+log "Putting datastore $datastore in maintenance mode."
 if ! proxmox-backup-manager datastore update "$datastore" --maintenance-mode read-only; then
-    echo "$(date "+%H:%M:%S"): Failed to put datastore in maintenance mode. Backup cannot continue. Aborting..."
+    log "Failed to put datastore in maintenance mode. Backup cannot continue. Aborting..."
+    email "PBS to Rsync Failed on host $(hostname)"
     exit 1
 fi
 
 # Start sync process
 ecode=0
-echo "$(date "+%H:%M:%S"): Starting rsync to remote server..."
-if ! /usr/bin/rsync -av --progress -H --delete -e ssh "${ldir}" "${ruser}"@"${rhost}":"${rdir}"; then
-    echo "$(date "+%H:%M:%S"): There were errors syncing files. Please review logs."
+log "Starting rsync to remote server..."
+if ! /usr/bin/rsync -av --progress -H --delete -e ssh "${ldir}" "${ruser}"@"${rhost}":"${rpath}"; then
+    log "There were errors syncing files. Please review logs."
     ecode=2
 fi
 
-echo "$(date "+%H:%M:%S"): Turning off maintenance mode on datastore $datastore"
+log "Turning off maintenance mode on datastore $datastore"
 if ! proxmox-backup-manager datastore update "$datastore" --delete maintenance-mode; then
-    echo "$(date "+%H:%M:%S"): Could not turn off maintenance mode on datastore. Check PBS UI for more information."
+    log "Could not turn off maintenance mode on datastore. Check PBS UI for more information."
     ecode=3
 fi
 
 # Cleanup old log files
-echo "$(date "+%H:%M:%S"): Cleaning up old log files..."
+log "Cleaning up old log files..."
 if ! find "$logpath" -type f -mtime +14 -exec rm -f {} \;; then
-    echo "$(date "+%H:%M:%S"): There were errors cleaning up log directory."
+    log "There were errors cleaning up log directory."
     ecode=4
 fi
 
-echo "$(date "+%H:%M:%S"): $0 finished with an exit code of $ecode"
+log "$0 finished with an exit code of $ecode"
+if [[ "$ecode" -ne 0 ]]; then
+    email "PBStoRsync of datastore: $datastore Completed with Errors on host: $(hostname)"
+else
+    email "PBStoRsync of datastore: $datastore Completed Successfully on host: $(hostname)"
+    
 exit $ecode

@@ -3,5 +3,7 @@
     "remoteuser": "username",
     "remotepath": "path/to/backup/directory",
     "logpath": "/path/to/logs/for/this/script",
-    "datastore": "LocalDatastore"
+    "datastore": "LocalDatastore",
+    "enableemail": true,
+    "emailrecipient": "email@example.com"
 }
