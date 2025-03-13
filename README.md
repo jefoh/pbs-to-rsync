@@ -9,13 +9,12 @@ to an offsite server that cannot have PBS installed.
 # Configuration File
 This JSON file has all the information you will need to provide so the script can send the data to the correct place.
 
-**remotehost**     : The remote server you would like to send data to.
-**remoteuser**     : The SSH user on the remote server.
-**remotepath**     : The filesystem path on the remote server that you would like to store the backups in.
-**logpath**        : The path on your local server that you would like to store the script's logs in. Do not include a trailing slash.
-**datastore**      : The case sensitive name of the PBS datastore you are backing up.
-**emailrecipient** : The email address that the script should send success or failure emails to. This uses the ```mail``` command and assumes
-                     that you have email configured in PBS.
+**remotehost**     : The remote server you would like to send data to. <br>
+**remoteuser**     : The SSH user on the remote server. <br>
+**remotepath**     : The filesystem path on the remote server that you would like to store the backups in. <br>
+**logpath**        : The path on your local server that you would like to store the script's logs in. Do not include a trailing slash. <br>
+**datastore**      : The case sensitive name of the PBS datastore you are backing up. <br>
+**emailrecipient** : The email address that the script should send success or failure emails to. This uses the ```mail``` command and assumes that you have email configured in PBS. <br>
 
 # Setup and Usage
 Make script executable
