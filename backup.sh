@@ -82,7 +82,7 @@ fi
 # Start sync process
 ecode=0
 log "Starting rsync to remote server..."
-if ! /usr/bin/rsync -av --progress -H --delete -e ssh "${ldir}" "${ruser}"@"${rhost}":"${rpath}"; then
+if ! /usr/bin/rsync -avh -H --delete -e ssh "${ldir}" "${ruser}"@"${rhost}":"${rpath}"; then
     log "There were errors syncing files. Please review logs."
     ecode=2
 fi
