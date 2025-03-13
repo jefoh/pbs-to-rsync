@@ -7,7 +7,7 @@ the option to sync to a "remote" which is another PBS at an off-site location. I
 to an offsite server that cannot have PBS installed. 
 
 # Configuration File
-This JSON file has all the information you will need to provide so the script can send the data to the correct place.
+This JSON file has all the information you will need to provide so the script can send the data to the correct place. For multiple datastores, create a new config file for each and use it as the script parameter.
 
 **remotehost**     : The remote server you would like to send data to. <br>
 **remoteuser**     : The SSH user on the remote server. <br>
@@ -17,6 +17,8 @@ This JSON file has all the information you will need to provide so the script ca
 **emailrecipient** : The email address that the script should send success or failure emails to. This uses the ```mail``` command and assumes that you have email configured in PBS. <br>
 
 # Setup and Usage
+You will need SSH keys set up between the client and server.
+
 Make script executable
 ```chmod u+x backup.sh```
 
