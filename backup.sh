@@ -23,12 +23,6 @@
 # - openssh-server
 #
 
-# Set up logging
-logfile="${logpath}/$(date "+%Y-%m-%d").log"
-exec 3>&1 4>&2
-trap 'exec 2>&4 1>&3' 0 1 2 3
-exec 1>"$logfile" 2>&1
-
 # Read config file values
 config="$1"
 if [[ ! -f "$config" ]]; then
@@ -43,9 +37,15 @@ logpath=$(jq -r .logpath "$config")
 datastore=$(jq -r .datastore "$config")
 erecipient=$(jq -r .emailrecipient "$config")
 
+# Set up logging
+logfile="${logpath}/$(date "+%Y-%m-%d").log"
+exec 3>&1 4>&2
+trap 'exec 2>&4 1>&3' 0 1 2 3
+exec 1>"$logfile" 2>&1
+
 #Creates log entry
 log(){
-	echo -e "$(date "+%m%d%Y_%H%M%S"): $1"	
+	echo -e "$(date "+%H:%M:%S"): $1"	
 }
 
 #Sends an email alert
@@ -58,7 +58,7 @@ ldir=$(proxmox-backup-manager datastore list | grep "$datastore" | awk '{print $
 
 # Initial config checks
 if [[ -z "$ldir" ]]; then
-    echo "Datastore $datastore does not exist. Check datastore name and try again. Exiting..."
+    log "Datastore $datastore does not exist. Check datastore name and try again. Exiting..."
     email "PBS to Rsync Failed on host $(hostname)"
     exit 1
 fi
@@ -66,7 +66,7 @@ fi
 # Wait for running tasks to complete before starting
 runningtasks=$(proxmox-backup-manager task list)
 while [ -n "$runningtasks" ]; do
-    echo "$(date "+%H:%M:%S"): Other tasks are running. Waiting..."
+    log "Other tasks are running. Waiting..."
     sleep 5m
     runningtasks=$(proxmox-backup-manager task list)
 done
@@ -105,5 +105,6 @@ if [[ "$ecode" -ne 0 ]]; then
     email "PBStoRsync of datastore: $datastore Completed with Errors on host: $(hostname)"
 else
     email "PBStoRsync of datastore: $datastore Completed Successfully on host: $(hostname)"
-    
+fi
+
 exit $ecode
