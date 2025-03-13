@@ -6,7 +6,6 @@
 # This software is licensed under the terms of the GNU General Public License v3.0.
 # See the LICENSE file for more details.
 # 
-#
 # 
 # This is a short simple script made with the intention of 
 # syncing a local Proxmox Backup Server datastore to a 
@@ -22,6 +21,7 @@
 # - rsync
 # - openssh-server
 #
+# Usage: ./backup.sh <config.json>
 
 # Read config file values
 config="$1"
