@@ -17,6 +17,8 @@ This JSON file has all the information you will need to provide so the script ca
 **emailrecipient** : The email address that the script should send success or failure emails to. This uses the ```mail``` command and assumes that you have email configured in PBS. <br>
 
 # Setup and Usage
+
+## Backup
 You will need SSH keys set up between the client and server.
 
 Make script executable
@@ -28,3 +30,11 @@ Run script
 ```./backup.sh config.json```
 
 For automated backups, you can add it to your crontab.
+
+## Restore
+To restore, you can either use rsync manually or use the included interactive ```restore.sh``` script.
+
+```restore.sh``` uses the same ```config.json``` file that ```backup.sh``` uses. It will reverse the rsync command and pull the data back into the datastore that is specified in the config file. Please make sure you do not have anything you want to keep in the local datastore before running this. This will overwrite eventhing inside.
+
+Run script
+```./restore.sh config.json```
